@@ -1,0 +1,196 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alexandria
+  namespace: alexandria
+  labels:
+    app.kubernetes.io/name: alexandria
+    app.kubernetes.io/version: "2026.09.19"
+  annotations:
+    application-revision: 7ae4a78be3a81d9e34e8c39fc997fbe7b7f4fba0
+    indexed-revision: f1706da65982d453288a6daaefc9e5093a14b7d4
+    oci-index-digest: sha256:47e0108e413bc38effb1689a631a5488f2cae061a9b111a5784cf3df7a079c9e
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alexandria
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alexandria
+        app.kubernetes.io/version: "2026.09.19"
+      annotations:
+        application-revision: 7ae4a78be3a81d9e34e8c39fc997fbe7b7f4fba0
+        indexed-revision: f1706da65982d453288a6daaefc9e5093a14b7d4
+        oci-index-digest: sha256:47e0108e413bc38effb1689a631a5488f2cae061a9b111a5784cf3df7a079c9e
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: k3s-saturn.solar.home.arpa
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 15
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: alexandria
+          image: docker.io/library/alexandria:2026.09.19
+          imagePullPolicy: Never
+          args:
+            - serve
+            - --data
+            - /opt/alexandria/data
+            - --transport
+            - streamable-http
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+            - --issuer-url
+            - https://auth.piyushsatti.com/oidc
+            - --resource-url
+            - https://mcp.piyushsatti.com/connections/alexandria/mcp
+            - --jwks-url
+            - http://127.0.0.1:8001/jwks.json
+            - --required-scope
+            - read:alexandria
+          env:
+            - name: ALEXANDRIA_ALLOWED_SUBJECTS
+              value: b1ws3lig3z9p
+            - name: HF_HUB_OFFLINE
+              value: "1"
+          ports:
+            - name: mcp
+              containerPort: 8000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+          startupProbe:
+            tcpSocket:
+              port: mcp
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 120
+          readinessProbe:
+            tcpSocket:
+              port: mcp
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: mcp
+            periodSeconds: 30
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: temporary
+              mountPath: /tmp
+            - name: jwks
+              mountPath: /etc/alexandria/jwks.json
+              subPath: jwks.json
+              readOnly: true
+        - name: jwks
+          image: docker.io/library/alexandria:2026.09.19
+          imagePullPolicy: Never
+          command:
+            - python
+            - -m
+            - http.server
+            - "8001"
+            - --bind
+            - 127.0.0.1
+            - --directory
+            - /jwks
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: temporary-jwks
+              mountPath: /tmp
+            - name: jwks
+              mountPath: /jwks
+              readOnly: true
+      volumes:
+        - name: temporary
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+        - name: temporary-jwks
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Mi
+        - name: jwks
+          configMap:
+            name: alexandria
+            items:
+              - key: jwks.json
+                path: jwks.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alexandria
+  namespace: alexandria
+  labels:
+    app.kubernetes.io/name: alexandria
+spec:
+  type: NodePort
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/name: alexandria
+  ports:
+    - name: mcp
+      protocol: TCP
+      port: 8000
+      targetPort: mcp
+      nodePort: 30526
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: alexandria
+  namespace: alexandria
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: alexandria
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 192.168.10.25/32
+      ports:
+        - protocol: TCP
+          port: 8000

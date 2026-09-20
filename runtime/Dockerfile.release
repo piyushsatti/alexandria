@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1.7
+FROM python@sha256:a116514e19457bcb7af7efe9c3dd0b9b71e85b317694e7882a1c52aa15a78134
+
+ARG ALEXANDRIA_APP_REVISION
+ARG ALEXANDRIA_INDEX_REVISION
+ARG ALEXANDRIA_RELEASE_VERSION
+ARG ALEXANDRIA_EMBEDDING_MODEL
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ripgrep=13.0.0-4+b2 \
+    && rm -r /var/lib/apt/lists/* \
+    && useradd --system --uid 10001 --home-dir /nonexistent --shell /usr/sbin/nologin alexandria
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py auth.py graph_access.py inbound.py listing.py ./
+
+LABEL org.opencontainers.image.title="Alexandria" \
+      org.opencontainers.image.version="${ALEXANDRIA_RELEASE_VERSION}" \
+      org.opencontainers.image.revision="${ALEXANDRIA_APP_REVISION}" \
+      alexandria.index.revision="${ALEXANDRIA_INDEX_REVISION}" \
+      alexandria.embedding.model="${ALEXANDRIA_EMBEDDING_MODEL}"
+
+ENV PYTHONUNBUFFERED=1 \
+    HF_HUB_OFFLINE=1
+USER 10001:10001
+EXPOSE 8000
+ENTRYPOINT ["python", "/app/app.py"]
+CMD ["serve", "--data", "/data", "--inbound", "/inbound", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
