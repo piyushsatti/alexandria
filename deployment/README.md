@@ -10,6 +10,12 @@ deployment and are not applied automatically. A live candidate manifest must
 be generated only after the exact cluster, namespace, volume, image-loading,
 gateway, and identity identifiers have been verified.
 
+Use [kubernetes-attached-block.template.yaml](kubernetes-attached-block.template.yaml)
+as the starting shape for that candidate. It has placeholders on purpose; do
+not apply it until they have been replaced from the live inventory and the
+image digest, data-block receipt, identity registration, and gateway route have
+been reviewed together.
+
 ```mermaid
 flowchart TD
     K[Knowledge checkout] --> P[prepare_data_block.py]

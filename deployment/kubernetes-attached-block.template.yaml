@@ -1,0 +1,110 @@
+# TEMPLATE ONLY. Replace every REPLACE_WITH_* value from the live inventory
+# before review. This file is deliberately not apply-ready.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alexandria
+  namespace: REPLACE_WITH_NAMESPACE
+  labels:
+    app.kubernetes.io/name: alexandria
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alexandria
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alexandria
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Always
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: alexandria
+          image: REPLACE_WITH_IMAGE_DIGEST
+          imagePullPolicy: IfNotPresent
+          args:
+            - serve
+            - --data
+            - /data
+            - --transport
+            - streamable-http
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+            - --issuer-url
+            - REPLACE_WITH_LOGTO_ISSUER_URL
+            - --resource-url
+            - REPLACE_WITH_MCP_RESOURCE_URL
+            - --jwks-url
+            - REPLACE_WITH_LOGTO_JWKS_URL
+            - --required-scope
+            - read:alexandria
+          env:
+            - name: ALEXANDRIA_ALLOWED_SUBJECTS
+              valueFrom:
+                secretKeyRef:
+                  name: REPLACE_WITH_IDENTITY_SECRET
+                  key: allowed_subjects
+          ports:
+            - name: mcp
+              containerPort: 8000
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: temporary
+              mountPath: /tmp
+            - name: alexandria-data
+              mountPath: /data
+              readOnly: true
+            # The process does not register submit_inbound unless
+            # --enable-inbound is added deliberately.
+            - name: alexandria-data
+              mountPath: /inbound
+              subPath: .alexandria-inbound
+              readOnly: false
+      volumes:
+        - name: temporary
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Mi
+        - name: alexandria-data
+          persistentVolumeClaim:
+            claimName: REPLACE_WITH_DATA_CLAIM
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alexandria
+  namespace: REPLACE_WITH_NAMESPACE
+  labels:
+    app.kubernetes.io/name: alexandria
+spec:
+  selector:
+    app.kubernetes.io/name: alexandria
+  ports:
+    - name: mcp
+      protocol: TCP
+      port: 8000
+      targetPort: mcp
