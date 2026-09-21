@@ -1,0 +1,76 @@
+# TEMPLATE ONLY. Replace every REPLACE_WITH_* value before review/apply.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: alexandria
+  labels:
+    app.kubernetes.io/name: alexandria
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: alexandria
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alexandria
+  namespace: alexandria
+  labels:
+    app.kubernetes.io/name: alexandria
+    app.kubernetes.io/version: "REPLACE_WITH_CALVER"
+  annotations:
+    application-revision: REPLACE_WITH_APPLICATION_REVISION
+    indexed-revision: REPLACE_WITH_INDEXED_REVISION
+spec:
+  automountServiceAccountToken: false
+  nodeSelector:
+    kubernetes.io/hostname: REPLACE_WITH_NODE_NAME
+  restartPolicy: Always
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: alexandria
+      # The manually imported runtime records this exact tag. Pulling is disabled.
+      # OCI index sha256:47e0108… maps to CRI config ID sha256:c407fe2….
+      image: REPLACE_WITH_IMAGE_REFERENCE
+      imagePullPolicy: Never
+      command:
+        - python
+        - -c
+        - import time; time.sleep(315360000)
+      env:
+        - name: HF_HUB_OFFLINE
+          value: "1"
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: "1"
+          memory: 1536Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: temporary
+          mountPath: /tmp
+  volumes:
+    - name: temporary
+      emptyDir:
+        medium: Memory
+        sizeLimit: 64Mi

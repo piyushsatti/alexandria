@@ -2,7 +2,11 @@ name: Alexandria CI
 
 on:
   push:
-    branches: [alexandria-manual-checkpoint]
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -26,7 +30,7 @@ jobs:
           BEFORE: ${{ github.event.before }}
         run: |
           if git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            python3 runtime/ci/check_changes.py --base "$BEFORE"
+            python3 scripts/check_changes.py --base "$BEFORE"
           else
             git diff --check HEAD^ HEAD
           fi
@@ -40,23 +44,26 @@ jobs:
 
       - name: Check runtime formatting and lint
         run: |
-          "$RUNNER_TEMP/check-tools/bin/ruff" format --check runtime
-          "$RUNNER_TEMP/check-tools/bin/ruff" check runtime
+          "$RUNNER_TEMP/check-tools/bin/ruff" format --check src tests scripts
+          "$RUNNER_TEMP/check-tools/bin/ruff" check src tests scripts
+
+      - name: Install Alexandria package
+        run: python3 -m pip install --no-deps --editable .
 
       - name: Run runtime unit tests
-        run: PYTHONPATH=runtime python3 -m unittest discover -s runtime/tests -p 'test_*.py' -v
+        run: python3 -m unittest discover -s tests/pi/alexandria/runtime -p 'test_*.py' -v
 
       - name: Install locked graph test dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund --prefix graph/pi-trial
+        run: npm ci --ignore-scripts --no-audit --no-fund --prefix src/pi/alexandria/graph/assets/pi-trial
 
       - name: Run graph safety tests
-        run: PYTHONPATH=graph:runtime python3 -m unittest discover -s graph/tests -p 'test_*.py' -v
+        run: python3 -m unittest discover -s tests/pi/alexandria/graph -p 'test_*.py' -v
 
       - name: Run preservation contract tests
-        run: node --test graph/tests/test_preservation*.mjs
+        run: node --test tests/pi/alexandria/graph/test_preservation*.mjs
 
       - name: Build code-only runtime image
-        run: docker build --iidfile "$RUNNER_TEMP/alexandria-image" runtime
+        run: docker build --iidfile "$RUNNER_TEMP/alexandria-image" -f docker/Dockerfile .
 
       - name: Check image startup and dependency boundary
         run: |
