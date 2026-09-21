@@ -1,0 +1,9 @@
+*
+!README.md
+!pyproject.toml
+!requirements.txt
+!src/
+!src/pi/
+!src/pi/alexandria/
+!src/pi/alexandria/runtime/
+!src/pi/alexandria/runtime/*.py

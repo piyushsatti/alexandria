@@ -40,5 +40,5 @@ Before applying a candidate deployment, record:
 5. the gateway resource URL, issuer, JWKS URL, scope, and owner subject; and
 6. the previous image-plus-block pair retained for rollback.
 
-The current Saturn deployment remains the rollback target until a candidate
+The current deployment remains the rollback target until a candidate
 passes parity, authentication, restart, inbound durability, and route checks.

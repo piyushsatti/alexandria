@@ -1,104 +1,78 @@
 # Alexandria
 
-Alexandria is the stateless runtime for serving a versioned knowledge data block
-through MCP. The private corpus remains in the separate Knowledge repository;
-this repository owns code, tests, packaging, deployment manifests, and operating
-instructions.
+Alexandria serves a versioned Markdown/text knowledge base through MCP. The
+Knowledge repository is the source of truth; this repository contains the
+runtime, index preparation, tests, image definitions, deployment contracts, and
+operating tools.
 
-## Boundary
+## From a GitHub knowledge repository to a working MCP
 
 ```mermaid
 flowchart LR
-    K[Knowledge checkout] --> B[Versioned data block]
-    A[Alexandria product] --> I[Code-only runtime image]
-    I --> M[Alexandria MCP]
-    B --> M
-    M --> C[Committed layer]
-    M --> U[Inbound layer]
-    U --> Q[SQLite queue and inbound LanceDB]
+    G[Private GitHub Knowledge repo] --> C[Checkout exact commit]
+    C --> I[Build LanceDB index]
+    I --> B[Verified data block]
+    A[Alexandria code] --> D[Code-only image]
+    B --> M[Alexandria MCP]
+    D --> M
+    M --> U[Codex, ChatGPT, or another MCP client]
 ```
 
-The image contains runtime code and pinned dependencies only. A release data
-block contains the exact committed source snapshot, LanceDB generation, model
-files, and a receipt tying those bytes to a Knowledge revision. The committed
-portion is mounted read-only. The optional `.alexandria-inbound` directory is
-the only writable path and stores uncommitted submissions, receipts, and their
-derived index.
+1. Check out the Knowledge repository at the exact commit you want to serve.
+2. Build the LanceDB index over its committed `.md` and `.txt` files.
+3. Prepare a data block containing the source snapshot, index, embeddings,
+   model files, and release receipt.
+4. Build the code-only Alexandria image and run it with the data block mounted
+   at `/data` read-only.
+5. Connect a local client through stdio, or expose Streamable HTTP behind HTTPS
+   and OAuth for remote clients.
 
-## Repositories
+The running service does not query GitHub. It searches the attached data block,
+so GitHub credentials never enter the image or the serving process.
 
-| Repository | Owns | Does not own |
-|---|---|---|
-| `Knowledge` | Markdown/text corpus, architecture, provenance, research, graph run evidence | Runtime code, image build, deployment package |
-| `Alexandria` | MCP runtime, graph implementation, tests, data-block tooling, image and deployment manifests | Private corpus, generated index, model cache, credentials |
+The detailed commands are in [Getting started](docs/getting-started.md). The
+complete release and replacement procedure is in [Release workflow](docs/release-workflow.md).
 
-The product checkout currently has no remote configured. Add one only after an
-exact registered URL is explicitly selected.
+## Quick local run
 
-## Data-block preparation
+After creating a verified data block at `/path/to/alexandria-data`:
 
-Prepare a block from an exact Knowledge checkout and an already verified active
-index:
-
-```text
-python runtime/prepare_data_block.py \
-  --knowledge /path/to/Knowledge \
-  --active-data /path/to/Knowledge/.alexandria-data \
-  --revision <exact-commit> \
-  --model BAAI/bge-small-en-v1.5 \
-  --output /path/to/alexandria-data-2026.09.20
-```
-
-The command refuses a revision or model mismatch and verifies every indexed
-Markdown/text source hash before writing the block. It creates:
-
-```text
-/data/active.json
-/data/builds/<generation>/source/...
-/data/models/...
-/data/release-data-receipt.json
-/data/.alexandria-inbound/{catalog.sqlite3,content,queue,receipts,index}
-```
-
-Build the code-only image from `runtime/`. Mount `/data` read-only and mount
-`/data/.alexandria-inbound` as `/inbound` only when inbound mode is explicitly
-enabled:
-
-```text
-docker build -t alexandria:<calver> runtime
-docker run --rm -p 8000:8000 \
+```bash
+docker build -t alexandria:2026.09.20 -f docker/Dockerfile .
+docker run --rm -i \
+  --network none \
   --read-only \
-  --mount type=bind,src=/path/to/alexandria-data,dst=/data,ro \
-  --mount type=bind,src=/path/to/alexandria-data/.alexandria-inbound,dst=/inbound \
-  alexandria:<calver> serve --data /data --inbound /inbound \
-    --transport streamable-http --host 0.0.0.0 --port 8000
+  --mount type=bind,src=/path/to/alexandria-data,dst=/data,readonly \
+  alexandria:2026.09.20 serve --data /data
 ```
 
-The default server exposes five read-only tools: `search`, `text_search`,
-`read_document`, `status`, and `list_files`. `submit_inbound` is registered
-only with `--enable-inbound`; it writes server-generated IDs into the inbound
-mount, records the verified MCP principal, and returns a queued receipt. The
-worker indexes one submission at a time and never mutates the committed
-generation.
+The default read-only MCP surface is:
 
-## Release order
+| Tool | Purpose |
+|---|---|
+| `search` | Semantic retrieval |
+| `text_search` | Literal ripgrep search |
+| `read_document` | Read a bounded document range |
+| `status` | Report the served generation and block state |
+| `list_files` | List the authorized document tree and hashes |
 
-```mermaid
-sequenceDiagram
-    participant K as Knowledge
-    participant R as Release command
-    participant D as Data block
-    participant I as Runtime image
-    participant S as Candidate service
-    K->>R: exact checkout + revision + model
-    R->>D: verify hashes and stage active generation
-    R->>D: initialize hidden inbound mount
-    R->>I: build code-only image
-    I->>S: mount /data read-only
-    D->>S: mount /inbound only for explicit inbound mode
-    S-->>S: serve committed tools and optional queue worker
-```
+`submit_inbound` is an explicit optional feature. It requires a writable
+`/inbound` mount and `--enable-inbound`; the committed layer remains read-only.
 
-The existing Saturn deployment is the rollback target until a replacement has
-passed parity, authentication, inbound durability, and restart checks. No
-remote image registry or automatic deployment is part of this first split.
+## Updating a deployment
+
+There is no automatic GitHub-to-production refresh yet. Each update is a
+reviewable release: pull the new Knowledge commit, rebuild and verify the data
+block, build an image when runtime code changed, smoke-test the pair, and replace
+the service while retaining the previous pair for rollback.
+
+## Where to read next
+
+- [Documentation index](docs/README.md)
+- [Repository layout and boundaries](docs/repository-layout.md)
+- [Runtime contract](docs/runtime/README.md)
+- [Deployment contracts](deployment/README.md)
+- [Graph workflow](docs/graph/README.md)
+
+Internal versions use CalVer `YYYY.MM.DD`. The current verified Python baseline
+is 3.12, and the product uses the `pi.alexandria` PEP 420 namespace.

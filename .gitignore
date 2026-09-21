@@ -2,7 +2,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 .venv/
+*.egg-info/
+build/
+dist/
 node_modules/
 secrets/
 data/
@@ -10,3 +14,7 @@ data/
 *.sqlite3-shm
 *.sqlite3-wal
 *.tmp
+.local/
+.ty_cache/
+.coverage
+coverage.xml
