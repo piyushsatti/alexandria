@@ -83,6 +83,7 @@ def render(root):
                 "status": "extracted",
                 "qualification": {
                     "source_status": c["source_status"],
+                    "review_state": c.get("review_state", "not_checked"),
                     "scope": {
                         **scope,
                         "start": docs[scope["path"]].index(scope["quote"]),
@@ -141,7 +142,8 @@ def render(root):
         evidence += [
             "## " + c["id"],
             "",
-            f"**{c['source_status']}**: {c['subject']} {c['predicate']} {c['object']}",
+            f"**{c['source_status']}** ({c.get('review_state', 'not_checked')}): "
+            f"{c['subject']} {c['predicate']} {c['object']}",
             "",
             "Scope: " + c["scope"]["text"],
             "",

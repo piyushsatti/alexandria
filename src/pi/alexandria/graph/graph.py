@@ -92,7 +92,7 @@ def bounded_string(value, maximum=1000):
 
 def validate_qualification(value, texts, hashes, revision):
     """Carry qualifications with the assertion, with independently checked evidence."""
-    exact_keys(value, {"source_status", "scope", "annotations"})
+    exact_keys(value, {"source_status", "scope", "annotations"}, {"review_state"})
     if value["source_status"] not in (
         "accepted",
         "proposed",
@@ -103,6 +103,10 @@ def validate_qualification(value, texts, hashes, revision):
         "deferred",
     ):
         raise ValueError("Invalid source status; not a review approval")
+
+    review_state = value.get("review_state", "not_checked")
+    if review_state not in ("not_checked", "held"):
+        raise ValueError("Invalid qualification review state")
 
     def evidence(row, fields):
         exact_keys(row, {"path", "quote", "start", *fields})
@@ -144,6 +148,7 @@ def validate_qualification(value, texts, hashes, revision):
         raise ValueError("Duplicate qualification annotation")
     return {
         "source_status": value["source_status"],
+        "review_state": review_state,
         "scope": scope,
         "annotations": checked,
     }

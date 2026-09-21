@@ -1,6 +1,6 @@
 ---
 phase: step-04
-status: planned
+status: hold
 version: 2026.09.21
 ---
 
@@ -59,3 +59,20 @@ Step 4 may proceed to Step 5 only when the receipt shows:
 
 A semantic failure is useful evidence. Do not repair the fixture or rerun until
 green to make the gate pass.
+
+## Recorded result (2026.09.21)
+
+The frozen synthetic run completed all four stages against source revision
+`f10851a3a26337a3bcf3e351b1e8abf26c7821c0`. Expectations were written before
+model input. The independent comparison passed c1-c7 and reproduced two
+blocking defects: c8 carries an ambiguity marker but no claim-level held state,
+and c9 promotes a held-state review rule into accepted claims. Mechanical
+coverage was 20/20 source regions; semantic completeness was not proven.
+
+The phase is complete enough to proceed to the targeted Step 5 fix, but the
+candidate is held. The receipt is:
+
+`Knowledge/Alexandria/graph/goals/2026.09.21-status-ambiguity/step-04-baseline/comparison.json`
+
+The model-produced meaning check passed, but it is not independent acceptance
+evidence. No active index, deployment, or private corpus changed.

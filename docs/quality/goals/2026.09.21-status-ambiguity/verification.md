@@ -74,3 +74,17 @@ The goal is complete only when Step 5 has a `pass` or an explicit owner-approved
 `hold` that records the remaining limitation. A held result is not an accepted
 graph and cannot replace the active index. Every failed or held attempt remains
 available for comparison and recovery.
+
+## Step 4 receipt recorded
+
+The Step 4 receipt uses `status: hold` for the candidate and
+`phase_status: pass-to-targeted-fix` for the bounded experiment. This keeps the
+phase decision separate from candidate acceptance. The source-linked receipt and
+full synthetic run are in the Knowledge repository at:
+
+`Alexandria/graph/goals/2026.09.21-status-ambiguity/step-04-baseline/`
+
+The receipt records source and expectation hashes, code revision, model route
+identity limits, output manifest hash, mechanical coverage, two blocking
+findings, and `active_index_changed: false`. Step 5 may implement only the
+recorded targeted safeguards.

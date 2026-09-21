@@ -56,6 +56,7 @@ export function validateCandidate(data, docs, regions) {
   for (const claim of claims.values()) {
     for (const field of ['subject','predicate','object']) check(typeof claim[field] === 'string' && claim[field].trim(), 'Empty relationship');
     check(['accepted','proposed','open','requirement','limitation','historical','deferred'].includes(claim.source_status), 'Invalid source status');
+    if (claim.review_state !== undefined) check(['not_checked','held'].includes(claim.review_state), 'Invalid review state');
     uniqueQuote(claim.scope, docs);
     check(typeof claim.scope.text === 'string' && claim.scope.text.trim(), 'Missing standalone scope');
     check(Array.isArray(claim.annotation_ids) && new Set(claim.annotation_ids).size === claim.annotation_ids.length && claim.annotation_ids.every(id => annotations.has(id)), 'Invalid claim annotation');

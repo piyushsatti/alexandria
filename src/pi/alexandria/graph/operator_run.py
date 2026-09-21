@@ -8,7 +8,7 @@ import signal
 import subprocess
 from pathlib import Path
 
-from pi.alexandria.graph import graph, render_preservation
+from pi.alexandria.graph import graph, quality_gate, render_preservation
 from pi.alexandria.graph import preparation as prep
 from pi.alexandria.graph.resources import asset_root, node_modules_root
 
@@ -173,6 +173,10 @@ def execute_prepared(root, *, process_runner=run_process):
         stage = "render"
         rendered = render_preservation.render(root)
         write_receipt(root, "operator-render.json", rendered)
+        quality = quality_gate.inspect_candidate(
+            graph.read_json(root / "03-humanizer.json")
+        )
+        write_receipt(root, "quality-findings.json", quality)
         stage = "graph"
         output = root / "candidate-graph"
         if output.exists():
@@ -182,6 +186,8 @@ def execute_prepared(root, *, process_runner=run_process):
             "status": "completed-held",
             "automatic_acceptance": False,
             "model_review_pass": hold.get("model_review_pass"),
+            "quality_status": quality["status"],
+            "quality_blocking_findings": quality["blocking_findings"],
             "candidate_hash": hold["candidate_hash"],
             "graph_sha256": built["graph_sha256"],
             "source_revision": graph.read_json(root / "source/manifest.json")[
@@ -192,6 +198,7 @@ def execute_prepared(root, *, process_runner=run_process):
                 "pages": "candidate-pages.md",
                 "review": "review-queue.md",
                 "coverage": "coverage-ledger.md",
+                "quality": "quality-findings.json",
             },
         }
         write_receipt(root, "operator-result.json", receipt)
