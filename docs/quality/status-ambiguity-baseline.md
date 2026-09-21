@@ -123,3 +123,5 @@ measure. Until then:
 
 The next step after approval is a small, bounded comparison experiment. Model
 research, provider selection, and retrieval changes remain separate decisions.
+
+The executable goal package for that experiment is [Status and ambiguity goal](goals/2026.09.21-status-ambiguity/goal.md). Its task queue, phase contracts, verification receipt, and decision log are advanced one item at a time.
