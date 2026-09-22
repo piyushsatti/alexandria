@@ -453,9 +453,11 @@ def package_reader(store, identity, denied=()):
     require(isinstance(files, dict) and len(files) <= len(PACKAGE_FILES) + 3)
     source = read_json(root / "source/manifest.json")
     optional = {"quality-findings.json"} if "quality-findings.json" in files else set()
-    expected = set(PACKAGE_FILES) | optional | {
-        "source/" + safe_path(f["path"]) for f in source["files"]
-    }
+    expected = (
+        set(PACKAGE_FILES)
+        | optional
+        | {"source/" + safe_path(f["path"]) for f in source["files"]}
+    )
     require(set(files) == expected)
     for name, checksum in files.items():
         require(isinstance(checksum, str) and SHA256.fullmatch(checksum))

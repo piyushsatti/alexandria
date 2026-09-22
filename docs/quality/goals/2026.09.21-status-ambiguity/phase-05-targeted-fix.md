@@ -1,6 +1,6 @@
 ---
 phase: step-05
-status: planned
+status: pass
 version: 2026.09.21
 ---
 
@@ -54,3 +54,16 @@ The targeted fix is eligible for later quality research only when:
 - no new provider, embedding, ranking, deployment, or active-index change was
   introduced; and
 - the exact candidate code/config/source artifacts are recorded for rollback.
+
+## Recorded result (2026.09.21)
+
+The targeted fix passed the frozen rerun and the unfamiliar-document check. All
+nine cases passed: ambiguous material carries `review_state: held`, the review
+rule remains a `requirement`, and no unsupported claim is automatically accepted.
+Stable paragraph and evidence mappings survived Humanizer edits. The deterministic
+quality receipt was clear, the GraphReader exposed the review state without
+accepting the candidate, and the active index and deployment were unchanged.
+
+Receipt:
+
+`Knowledge/Alexandria/graph/goals/2026.09.21-status-ambiguity/step-05-targeted-fix/comparison.json`

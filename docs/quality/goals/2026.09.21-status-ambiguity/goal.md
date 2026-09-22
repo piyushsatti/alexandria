@@ -2,7 +2,7 @@
 goal_id: quality-status-ambiguity-2026.09.21
 title: Preserve status and ambiguity through graph generation
 version: 2026.09.21
-status: active
+status: complete
 ---
 
 # Goal: preserve status and ambiguity through graph generation
@@ -69,4 +69,19 @@ flowchart LR
 | `verification.md` | Evidence, gates, receipt fields, and final decision |
 | `decisions.md` | Scope and interpretation decisions made during the goal |
 
-Current state: the goal is `active`; all Step 4 and Step 5 tasks are `planned`.
+## Recorded result (2026.09.21)
+
+Step 4 completed with a held baseline receipt. The frozen comparison reproduced
+the two targeted defects: genuine ambiguity lacked a claim-level hold, and a
+review-state rule was promoted into accepted claims.
+
+Step 5 completed with a passing targeted fix. The deterministic quality gate now
+holds unresolved ambiguity, reports status-inflation findings, and prevents
+automatic acceptance. The rerun passed all nine frozen cases, preserved
+Humanizer paragraph mappings, and passed the unfamiliar-document check.
+
+The candidate remains explicitly held pending owner review. No production index,
+deployment, or model strategy changed. The authoritative receipts are:
+
+- `Knowledge/Alexandria/graph/goals/2026.09.21-status-ambiguity/step-04-baseline/comparison.json`
+- `Knowledge/Alexandria/graph/goals/2026.09.21-status-ambiguity/step-05-targeted-fix/comparison.json`

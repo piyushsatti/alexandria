@@ -17,6 +17,8 @@ older entries are not rewritten to make a later result look cleaner.
 | D-05 | Preserve exact source quotes and source revisions as the authority | accepted for this goal | Generated prose and graph edges are derivatives, not evidence |
 | D-06 | Keep model, embedding, hybrid retrieval, and reranking changes out of Step 5 | accepted for this goal | Fix the demonstrated preservation defects before changing retrieval variables |
 | D-07 | Use independent human-reviewed expectations written before extraction | accepted for this goal | Assistant-authored expectations alone cannot establish semantic accuracy |
+| D-08 | Enforce claim-level holds and status-inflation findings with a deterministic quality gate | accepted for this gate | The Step 4 defects are narrow enough to fix without changing model, retrieval, or deployment variables |
+| D-09 | Keep the passing candidate held pending owner review | accepted for this gate | A passing comparison proves the guard behavior, not acceptance of a new graph |
 
 ## Open decisions
 

@@ -1,6 +1,6 @@
 ---
 version: 2026.09.21
-status: planned
+status: pass
 ---
 
 # Verification contract
@@ -19,12 +19,12 @@ not completion.
 
 ## Preflight checks
 
-- [ ] Goal and phase are identified.
-- [ ] Source paths, revisions, hashes, and privacy scope are recorded.
-- [ ] Expected statuses and evidence were frozen before model input.
-- [ ] Code, prompt, dependency, and configuration identities are recorded.
-- [ ] Output directory is fresh and outside the active serving generation.
-- [ ] No credential, home directory, Docker socket, or working checkout is mounted
+- [x] Goal and phase are identified.
+- [x] Source paths, revisions, hashes, and privacy scope are recorded.
+- [x] Expected statuses and evidence were frozen before model input.
+- [x] Code, prompt, dependency, and configuration identities are recorded.
+- [x] Output directory is fresh and outside the active serving generation.
+- [x] No credential, home directory, Docker socket, or working checkout is mounted
       into an untrusted model worker.
 
 ## Required receipt fields
@@ -88,3 +88,28 @@ The receipt records source and expectation hashes, code revision, model route
 identity limits, output manifest hash, mechanical coverage, two blocking
 findings, and `active_index_changed: false`. Step 5 may implement only the
 recorded targeted safeguards.
+
+## Step 5 receipt recorded
+
+The Step 5 receipt has `status: pass` and `phase_status: complete`. The
+deterministic comparison passed all nine frozen cases, the stable mapping check
+passed, and the quality gate reported zero blocking findings. Genuine ambiguity
+is represented with `review_state: held`; the unfamiliar review rule remains a
+requirement rather than accepted knowledge. The GraphReader exposes the review
+receipt while keeping `accepted: false`.
+
+The candidate remains `held-pending-owner-review`. No production index,
+deployment, or model strategy changed. Failed provider/runtime attempts are
+retained in the receipt, and the successful run records the configured route as
+`chatgpt/gpt-5.6-sol` through the local LiteLLM gateway.
+
+Receipt:
+
+`Alexandria/graph/goals/2026.09.21-status-ambiguity/step-05-targeted-fix/comparison.json`
+
+## Final gate result
+
+Step 4 and Step 5 are complete for this bounded quality goal. The result is
+eligible for later quality research, but it is not authorization to publish or
+replace the active graph. Keep the candidate and both receipts available for
+owner review and rollback comparison.

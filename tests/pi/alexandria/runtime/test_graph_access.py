@@ -223,6 +223,23 @@ class GraphAccessTests(unittest.TestCase):
             "proposed",
         )
 
+    def test_quality_findings_are_visible_without_accepting_candidate(self):
+        dump(
+            self.root,
+            "quality-findings.json",
+            {
+                "version": "2026.09.21",
+                "status": "held",
+                "automatic_acceptance": False,
+                "blocking_findings": 1,
+                "findings": [{"kind": "ambiguity_requires_hold"}],
+            },
+        )
+        status = GraphReader(self.root).status()
+        self.assertTrue(status["available"])
+        self.assertFalse(status["review"]["accepted"])
+        self.assertEqual(status["review"]["blocking_findings"], 1)
+
     def test_optional_unavailable_and_document_tool_defaults(self):
         registered = {}
 
