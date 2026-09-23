@@ -19,7 +19,9 @@ flowchart LR
 ```
 
 1. Check out the Knowledge repository at the exact commit you want to serve.
-2. Build the LanceDB index over its committed `.md` and `.txt` files.
+2. Build the LanceDB index over the records marked `release_status: eligible`
+   in `Alexandria/corpus/corpus-manifest.json`. Held and excluded records are
+   never silently indexed.
 3. Prepare a data block containing the source snapshot, index, embeddings,
    model files, and release receipt.
 4. Build the code-only Alexandria image and run it with the data block mounted
@@ -58,6 +60,9 @@ The default read-only MCP surface is:
 
 `submit_inbound` is an explicit optional feature. It requires a writable
 `/inbound` mount and `--enable-inbound`; the committed layer remains read-only.
+Held graph packages are separate inspection artifacts. They are unavailable
+unless the server is started with `--graph-inspection` and a graph candidate or
+store is supplied.
 
 ## Updating a deployment
 

@@ -1,0 +1,51 @@
+{
+  "version": "2026.09.23",
+  "baseline_commit": "4b91a8bda3fe08a91f11deeb7049d332a40a240a",
+  "historical_missing_commits": [
+    "248cfd4",
+    "4c1b1ca"
+  ],
+  "original_commit_objects_recovered": false,
+  "recovery_method": "Replay 98 recorded FileChange events after remote baseline, then reproduce recorded Ruff 0.16.4 import sorting and formatting. No historical shell commands executed.",
+  "scope": {
+    "changed_files": 37,
+    "insertions": 3239,
+    "deletions": 106,
+    "matches_historical_combined_diff_counts": true
+  },
+  "verification": {
+    "python_tests": {
+      "passed": 144,
+      "seconds": 5.12
+    },
+    "node_tests": {
+      "passed": 9
+    },
+    "ruff_format": "pass",
+    "ruff_lint": "pass",
+    "diff_whitespace": "pass",
+    "combined_review_gate": "hold as expected",
+    "patch_reapplication": "pass",
+    "archive_content_hashes": "pass"
+  },
+  "archive_file_count": 116,
+  "sha256": {
+    "remote-baseline.bundle": "5fdc72619220da5ff63266d09479f356ab0386491738fcf43baa4b03836da3de",
+    "recovered-changes.patch": "0f44682a2b1cc3b8b6b8db0e8cfcaa3de69a7cb8504172a799ef0d3cb57447cd",
+    "recovered-source.tar.gz": "dd57f4d3be9dda6b3e1be8f838f506171615a7c38e291e5be407c5592f23cc78",
+    "file-events.json": "549171fbcb6855a3913d3ae1acf2cc1367c6261a7adfc072d54d3a53ee90a4bc"
+  },
+  "original_checkout_modified": false,
+  "knowledge_modified": false,
+  "remote_modified": false,
+  "deployment_modified": false,
+  "commit_created": true,
+  "limitations": [
+    "Original commit identity not recovered; restored files are committed with a new identity.",
+    "No live deployment or index recovery claimed.",
+    "Review decisions and candidate release checks remain pending."
+  ],
+  "recovered_tree": "bfd0b57f769a08886441e6d79f8e09a1bee3c15a",
+  "recovery_commit": "4b80fca2cabbeea9679658ff8ddcbc0cfae32a09",
+  "branch": "alexandria-manual-checkpoint"
+}

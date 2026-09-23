@@ -33,6 +33,10 @@ class PrepareReleaseDataTests(unittest.TestCase):
                     "embedding_model": "test/model",
                     "documents": 3,
                     "passages": 7,
+                    "corpus": {
+                        "manifest_sha256": "a" * 64,
+                        "selected_documents": 3,
+                    },
                 }
             )
         )

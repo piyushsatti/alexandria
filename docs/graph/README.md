@@ -24,6 +24,8 @@ remain in the Knowledge repository and are never copied into the product image.
 - The model receives data as text and has no shell, filesystem, network, or MCP
   tools.
 - A candidate remains held until the owner selects it.
+- Held graph packages are inspection-only and require the explicit
+  `--graph-inspection` server flag; normal committed retrieval never loads them.
 - Source hashes and graph receipts are checked before a package can be read.
 - Withdrawn source hashes block selection, restore, and backup.
 - The graph reader accepts only its fixed package contract and rejects symlinks,

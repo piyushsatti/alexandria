@@ -61,6 +61,15 @@ def stage(
     if manifest_path.is_symlink():
         raise ValueError("active.json must not be a symlink")
     manifest = json.loads(manifest_path.read_text())
+    corpus = manifest.get("corpus")
+    if not isinstance(corpus, dict):
+        raise ValueError(
+            "Active index has no corpus selection receipt; rebuild with the committed manifest"
+        )
+    if not corpus.get("manifest_sha256") or not isinstance(
+        corpus.get("selected_documents"), int
+    ):
+        raise ValueError("Active index has an incomplete corpus selection receipt")
     if source_revision is not None and manifest.get("revision") != source_revision:
         raise ValueError(
             "Active index revision does not match the selected source revision"
@@ -100,6 +109,7 @@ def stage(
         "embedding_model": manifest["embedding_model"],
         "documents": manifest["documents"],
         "passages": manifest["passages"],
+        "corpus": corpus,
         "tree_sha256": digest,
         "files": files,
         "bytes": size,

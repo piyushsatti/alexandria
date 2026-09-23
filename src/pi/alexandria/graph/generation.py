@@ -80,6 +80,8 @@ def package(bundle, store):
     store = initialize(store)
     identity = uuid.uuid4().hex
     names = list(PACKAGE_FILES) + ["source/" + name for name in reader.texts]
+    if (reader.root / "quality-findings.json").exists():
+        names.append("quality-findings.json")
     with tempfile.TemporaryDirectory(
         dir=store / "packages", prefix=".package-"
     ) as work:

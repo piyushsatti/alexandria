@@ -1,5 +1,7 @@
 """Source fidelity checks; semantic retrieval requires the selected real model."""
 
+import hashlib
+import json
 import subprocess
 import tempfile
 import unittest
@@ -29,8 +31,50 @@ class SourceTests(unittest.TestCase):
                 )
 
             git("init")
-            (root / "note.md").write_text("Accepted evidence")
+            corpus = root / "Alexandria/corpus"
+            corpus.mkdir(parents=True)
+            (corpus / "note.md").write_text("Accepted evidence")
+            sources = root / "Alexandria/sources"
+            sources.mkdir(parents=True)
+            (sources / "note.md").write_text("Original evidence")
+            (corpus / "corpus-manifest.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "2026.09.22",
+                        "snapshot_root": "Alexandria/corpus",
+                        "records": [
+                            {
+                                "file": "note.md",
+                                "sha256": hashlib.sha256(
+                                    b"Accepted evidence"
+                                ).hexdigest(),
+                                "source": "Alexandria/sources/note.md",
+                                "source_sha256": hashlib.sha256(
+                                    b"Original evidence"
+                                ).hexdigest(),
+                                "source_status": "present",
+                                "provenance_status": "source_present",
+                                "authority_status": "source_record",
+                                "release_status": "eligible",
+                            }
+                        ],
+                        "final_context_additions": [],
+                        "selection_policy": {
+                            "eligible_release_status": "eligible",
+                            "held_release_statuses": [
+                                "held_authority",
+                                "held_duplicate",
+                                "held_provenance",
+                            ],
+                            "require_snapshot_hash_match": True,
+                            "require_source_status": True,
+                        },
+                        "exclusions": [],
+                    }
+                )
+            )
             (root / "other.json").write_text("{}")
+            (root / "unselected.md").write_text("Unselected text")
             git("add", ".")
             git(
                 "-c",
@@ -41,11 +85,13 @@ class SourceTests(unittest.TestCase):
                 "-m",
                 "fixture",
             )
-            (root / "note.md").write_text("Uncommitted edit")
+            (corpus / "note.md").write_text("Uncommitted edit")
             (root / "untracked.md").write_text("Unreviewed evidence")
             records = list(app.committed_documents(root))
             self.assertEqual(len(records), 1)
-            self.assertEqual(records[0][1:], ("note.md", "Accepted evidence"))
+            self.assertEqual(
+                records[0][1:], ("Alexandria/corpus/note.md", "Accepted evidence")
+            )
 
 
 class TokenBoundaryTests(unittest.TestCase):

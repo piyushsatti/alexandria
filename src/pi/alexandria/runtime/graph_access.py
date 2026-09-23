@@ -194,9 +194,22 @@ class GraphReader:
         self.review = {
             "status": "held-pending-owner-review",
             "accepted": False,
+            "access_mode": "held_inspection_only",
             "model_review_pass": hold["model_review_pass"],
             "warning": "Candidate relationships and qualifications are model proposals, not accepted knowledge.",
         }
+        quality_path = self.root / "quality-findings.json"
+        if quality_path.exists():
+            quality = read_json(quality_path)
+            require(
+                quality.get("status") in ("clear", "held")
+                and quality.get("automatic_acceptance") is False
+                and type(quality.get("blocking_findings")) is int
+                and isinstance(quality.get("findings"), list)
+                and len(quality["findings"]) <= MAX_RECORDS
+            )
+            self.review["quality"] = copy.deepcopy(quality)
+            self.review["blocking_findings"] = quality["blocking_findings"]
         self.candidate_hash = candidate_hash
 
     def _span(self, row):
@@ -252,6 +265,11 @@ class GraphReader:
                 qualification["source_status"]
                 == assertion["qualification"]["source_status"]
                 == claim["source_status"]
+            )
+            require(
+                qualification.get("review_state", "not_checked")
+                == assertion["qualification"].get("review_state", "not_checked")
+                == claim.get("review_state", "not_checked")
             )
             require(
                 qualification["source_status"]
@@ -435,9 +453,12 @@ def package_reader(store, identity, denied=()):
     files = manifest["files"]
     require(isinstance(files, dict) and len(files) <= len(PACKAGE_FILES) + 3)
     source = read_json(root / "source/manifest.json")
-    expected = set(PACKAGE_FILES) | {
-        "source/" + safe_path(f["path"]) for f in source["files"]
-    }
+    optional = {"quality-findings.json"} if "quality-findings.json" in files else set()
+    expected = (
+        set(PACKAGE_FILES)
+        | optional
+        | {"source/" + safe_path(f["path"]) for f in source["files"]}
+    )
     require(set(files) == expected)
     for name, checksum in files.items():
         require(isinstance(checksum, str) and SHA256.fullmatch(checksum))
@@ -484,7 +505,11 @@ class OptionalGraph:
             else {
                 "available": False,
                 "reason": self.reason,
-                "review": {"accepted": False, "status": "unavailable"},
+                "review": {
+                    "accepted": False,
+                    "status": "unavailable",
+                    "access_mode": "held_inspection_only",
+                },
             }
         )
 

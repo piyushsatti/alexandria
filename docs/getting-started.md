@@ -7,7 +7,16 @@ you want to serve one exact revision through Alexandria.
 
 The Knowledge checkout contains the committed Markdown/text corpus. The
 Alexandria checkout contains the runtime and build tools. Only the trusted build
-machine needs access to the private Knowledge repository.
+machine needs access to the private Knowledge repository. The committed corpus
+manifest is the release allowlist: Alexandria never falls back to indexing
+every Markdown or text file in the checkout. Records marked held or excluded
+are preserved for review but cannot enter a committed data block.
+
+Every record with `source_status: present` must also name a repository-relative
+`source` path and its exact `source_sha256`. The runtime reads that blob from
+the selected Git revision and verifies the hash before it uses the record. A
+missing path, unsafe path, missing hash, or mismatch fails the build closed;
+the snapshot copy is not treated as proof of provenance by itself.
 
 ```bash
 cd /path/to/alexandria
@@ -36,11 +45,14 @@ LanceDB generation and advances `active.json` only after the build succeeds.
 uv run python -m pi.alexandria.runtime.app index \
   --source "$KNOWLEDGE" \
   --model "$MODEL" \
-  --data "$ACTIVE"
+  --data "$ACTIVE" \
+  --manifest Alexandria/corpus/corpus-manifest.json
 ```
 
 If you already have an index, you can skip this step only when its active
-manifest names the same Knowledge revision and embedding model.
+manifest names the same Knowledge revision, embedding model, and corpus
+manifest hash. An older all-files index must be rebuilt before it can be
+packaged as a release data block.
 
 ## 3. Prepare the immutable data block
 
@@ -54,7 +66,8 @@ uv run python -m pi.alexandria.runtime.prepare_data_block \
   --active-data "$ACTIVE" \
   --revision "$REV" \
   --model "$MODEL" \
-  --output "$RELEASE"
+  --output "$RELEASE" \
+  --manifest Alexandria/corpus/corpus-manifest.json
 ```
 
 The data block contains:
@@ -67,6 +80,12 @@ The data block contains:
 /data/release-data-receipt.json
 /data/.alexandria-inbound/...
 ```
+
+The release receipt records the manifest hash, selected paths, held paths, and
+excluded records. A source snapshot without verified provenance is held and is
+not copied into the committed LanceDB generation. The source hash checks are
+performed against the exact `REV`, so a later working-tree edit cannot silently
+change the released bytes.
 
 The committed portion is mounted read-only. The runtime never needs the GitHub
 token or the original source checkout.
