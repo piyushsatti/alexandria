@@ -53,6 +53,21 @@ jobs:
       - name: Run runtime unit tests
         run: python3 -m unittest discover -s tests/pi/alexandria/runtime -p 'test_*.py' -v
 
+      - name: Run Knowledge boundary checker tests
+        run: python3 -m unittest tests/test_knowledge_boundary.py -v
+
+      - name: Run structured provenance checker tests
+        run: python3 -m unittest tests/test_structured_provenance.py -v
+
+      - name: Run structured provenance review validator tests
+        run: python3 -m unittest tests/test_provenance_review.py -v
+
+      - name: Run authority review validator tests
+        run: python3 -m unittest tests/test_authority_review.py -v
+
+      - name: Run combined review bundle tests
+        run: python3 -m unittest tests/test_review_bundle.py -v
+
       - name: Install locked graph test dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund --prefix src/pi/alexandria/graph/assets/pi-trial
 

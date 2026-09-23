@@ -302,7 +302,9 @@ class GraphAccessTests(unittest.TestCase):
             patch.object(app, "embedder", return_value=engine),
             patch.object(app, "token_counter", return_value=len),
         ):
-            app.serve(data, self.root)
+            with self.assertRaisesRegex(ValueError, "graph inspection flag"):
+                app.serve(data, self.root)
+            app.serve(data, self.root, enable_graph_inspection=True)
             self.assertEqual(
                 set(registered),
                 {"search", "read_document", "text_search", "status", "list_files"},
@@ -323,7 +325,7 @@ class GraphAccessTests(unittest.TestCase):
                 ],
                 self.text,
             )
-            app.serve(data, self.root / "missing")
+            app.serve(data, self.root / "missing", enable_graph_inspection=True)
             self.assertFalse(registered["status"](graph=True)["available"])
             self.assertEqual(
                 registered["read_document"]("doc.md")["text"], "Original document index"

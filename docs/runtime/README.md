@@ -66,8 +66,21 @@ it is never inferred from the presence of a directory.
 
 ## Release data
 
-Use `python -m pi.alexandria.runtime.prepare_data_block` with an exact Knowledge checkout, exact
-revision, selected embedding model, and a new output directory. The command
-refuses a revision or model mismatch and compares every Markdown/text source
-hash before publishing the receipt. Build the image from the repository root
-with `docker/Dockerfile`; the image does not copy the output block.
+Use `python -m pi.alexandria.runtime.prepare_data_block` with an exact Knowledge
+checkout, exact revision, selected embedding model, corpus manifest, and a new
+output directory. The command refuses a revision or model mismatch, requires
+the active index to carry the same corpus-manifest hash, and compares every
+eligible source hash before publishing the receipt. Build the image from the
+repository root with `docker/Dockerfile`; the image does not copy the output
+block.
+
+For each manifest record marked `source_status: present`, the release command
+requires a repository-relative `source` and a 64-character `source_sha256`.
+It reads the source blob from the exact requested Git revision and compares the
+digest before selecting the snapshot. Any missing, unsafe, or mismatched source
+reference fails closed; a snapshot-only record remains held.
+
+Graph packages produced by the editorial workflow remain held and
+inspection-only. Start the server with `--graph-inspection` only for an
+explicit review session; ordinary committed search and reads never select a
+held graph package.

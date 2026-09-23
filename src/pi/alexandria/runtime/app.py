@@ -19,6 +19,12 @@ try:
 except ImportError:  # pragma: no cover - runtime image always includes MCP
     Context = object
 
+from pi.alexandria.runtime.corpus import (
+    DEFAULT_MANIFEST,
+    git_revision,
+    load_selection,
+    selection_summary,
+)
 from pi.alexandria.runtime.listing import (
     committed_tree,
     inbound_tree,
@@ -32,19 +38,16 @@ def git(root, *args):
     )
 
 
-def committed_documents(root):
-    """Read committed blobs, never uncommitted working-copy text or symlinks."""
-    revision = git(root, "rev-parse", "HEAD").decode().strip()
-    for entry in git(root, "ls-tree", "-rz", revision).split(b"\0"):
-        if not entry:
-            continue
-        metadata, name = entry.split(b"\t", 1)
-        mode, _kind, blob = metadata.decode().split()
-        path = name.decode()
-        if mode not in ("100644", "100755") or not path.endswith((".md", ".txt")):
-            continue
-        text = git(root, "cat-file", "blob", blob).decode("utf-8")
-        yield revision, path, text
+def committed_documents(root, corpus_manifest=DEFAULT_MANIFEST):
+    """Read only the manifest-selected committed corpus blobs."""
+    selection = load_selection(Path(root), manifest_path=corpus_manifest)
+    revision = git_revision(Path(root))
+    for item in selection["selected"]:
+        try:
+            text = item["bytes"].decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"Corpus file is not UTF-8: {item['path']}") from error
+        yield revision, item["path"], text
 
 
 def passages(text, maximum=800):
@@ -86,11 +89,13 @@ def bounded_passages(text, count_tokens, maximum_tokens=480):
             )
 
 
-def build(root, data, model):
+def build(root, data, model, corpus_manifest=DEFAULT_MANIFEST):
     import lancedb
     import pyarrow as pa
 
     data.mkdir(parents=True, exist_ok=True)
+    selection = load_selection(Path(root), manifest_path=corpus_manifest)
+    revision = git_revision(Path(root))
     # A failed manual build leaves the active pointer unchanged.
     generation = data / "builds" / uuid.uuid4().hex
     snapshot = generation / "source"
@@ -114,8 +119,9 @@ def build(root, data, model):
     document_count = 0
     maximum_tokens = 0
     split_windows = 0
-    revision = None
-    for revision, path, text in committed_documents(root):
+    for item in selection["selected"]:
+        path = item["path"]
+        text = item["bytes"].decode("utf-8")
         document_hash = hashlib.sha256(text.encode()).hexdigest()
         relative = Path(path)
         if relative.is_absolute() or ".." in relative.parts:
@@ -186,6 +192,7 @@ def build(root, data, model):
         "maximum_passage_tokens": maximum_tokens,
         "additional_windows_to_avoid_truncation": split_windows,
         "formats": [".md", ".txt"],
+        "corpus": selection_summary(selection),
     }
     temporary = data / "active.next.json"
     temporary.write_text(json.dumps(manifest, indent=2))
@@ -235,6 +242,7 @@ def serve(
     allowed_subjects=(),
     inbound=None,
     enable_inbound=False,
+    enable_graph_inspection=False,
 ):
     import lancedb
     from mcp.server.fastmcp import FastMCP
@@ -267,7 +275,17 @@ def serve(
     from pi.alexandria.runtime.graph_access import OptionalGraph
     from pi.alexandria.runtime.inbound import InboundStore, authenticated_identity
 
-    graph_access = OptionalGraph(graph_candidate, store=graph_store)
+    if (
+        graph_candidate is not None or graph_store is not None
+    ) and not enable_graph_inspection:
+        raise ValueError(
+            "Held graph access requires the explicit graph inspection flag"
+        )
+    graph_access = (
+        OptionalGraph(graph_candidate, store=graph_store)
+        if enable_graph_inspection
+        else OptionalGraph()
+    )
     inbound_store = None
     if enable_inbound:
         if inbound is None:
@@ -707,6 +725,11 @@ def main():
     index.add_argument("--source", type=Path, required=True)
     index.add_argument("--model", required=True)
     index.add_argument("--data", type=Path, required=True)
+    index.add_argument(
+        "--manifest",
+        default=DEFAULT_MANIFEST,
+        help="Committed Knowledge corpus selection manifest",
+    )
     server = commands.add_parser("serve")
     server.add_argument("--data", type=Path, required=True)
     server.add_argument(
@@ -746,9 +769,14 @@ def main():
         type=Path,
         help="Explicit persistent inspection store; selected package is validated at startup",
     )
+    server.add_argument(
+        "--graph-inspection",
+        action="store_true",
+        help="Explicitly enable read-only access to a held graph candidate",
+    )
     args = parser.parse_args()
     if args.command == "index":
-        build(args.source.resolve(), args.data.resolve(), args.model)
+        build(args.source.resolve(), args.data.resolve(), args.model, args.manifest)
     else:
         allowed_subjects = tuple(
             subject.strip()
@@ -769,6 +797,7 @@ def main():
             allowed_subjects=allowed_subjects,
             inbound=args.inbound,
             enable_inbound=args.enable_inbound,
+            enable_graph_inspection=args.graph_inspection,
         )
 
 

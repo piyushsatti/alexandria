@@ -194,6 +194,7 @@ class GraphReader:
         self.review = {
             "status": "held-pending-owner-review",
             "accepted": False,
+            "access_mode": "held_inspection_only",
             "model_review_pass": hold["model_review_pass"],
             "warning": "Candidate relationships and qualifications are model proposals, not accepted knowledge.",
         }
@@ -504,7 +505,11 @@ class OptionalGraph:
             else {
                 "available": False,
                 "reason": self.reason,
-                "review": {"accepted": False, "status": "unavailable"},
+                "review": {
+                    "accepted": False,
+                    "status": "unavailable",
+                    "access_mode": "held_inspection_only",
+                },
             }
         )
 
